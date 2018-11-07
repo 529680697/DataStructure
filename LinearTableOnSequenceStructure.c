@@ -7,14 +7,13 @@
 #define FALSE 0
 #define OK 1
 #define ERROR 0
-#define ERROR1 -3
 #define INFEASTABLE -1
 #define OVERFLOW -2
 //数据元素类型定义
 typedef int status;
 typedef int ElemType;
 
-#define LIST_INIT_SIZE 100  //列表初始大小
+#define LIST_INIT_SIZE 10  //列表初始大小
 #define LIST_INCREMENT 10  //列表增量
 
 typedef struct {  //顺序表（顺序结构）的定义
@@ -25,7 +24,7 @@ typedef struct {  //顺序表（顺序结构）的定义
 
 typedef struct L_list{  //列表指针链表的定义
     SqList *l;
-    char name[12];
+    char name[40];
     struct L_list *next;
 }L_list;
 //线性表的各种操作函数的声明
@@ -41,26 +40,24 @@ status NextElem(SqList L, ElemType cur_e, ElemType * next_e);
 status ListInsert(SqList * L, int i, ElemType e);
 status ListDelete(SqList * L, int i, ElemType * e);
 status ListTraverse(SqList L, void (* visit)(ElemType e));
+status ListDownload(SqList * L, char * list_name);
+status ListUpload(SqList * L, char * list_road, char * list_name);
 void visit(ElemType e);
 
 //其他函数的声明
-status equal(ElemType x, ElemType y);
-void display(ElemType e);
+status display(L_list * head_point);  //显示系统中已经存在的表格名称
 void menu(void);
 
 
 void main(void){
-//    SqList L1, L2;
-//    L1.elem = L2.elem = NULL;
     L_list table_list, *head_list_point, *new_p;  //声明线性表指针链表(多表表头链表)
     table_list.next = NULL;
     head_list_point = &table_list;  //声明头指针指向线性表指针链表
-//    p = &table_list;  //声明当前指针指向线性表指针链表(此时指向头节点)
     int option;
     do{
         system("cls");
         menu();
-        printf("Please input your option[0-12]:");
+        printf("Please input your option[0-15]:");
         scanf("%d", &option);
         switch (option){
             case 0:
@@ -224,7 +221,7 @@ void main(void){
                                 printf("Please enter the number which you want to get [1-%d]:", p->l->length);
                                 scanf("%d", &num);
                             }
-                            while (num < 0 || num > p->l->length) {
+                            while (num < 1 || num > p->l->length) {
                                 printf("Please enter the right number [1-%d]:", p->l->length);
                                 scanf("%d", &num);
                             }
@@ -295,7 +292,7 @@ void main(void){
                             ElemType result = PriorElem(*p->l, e, &pre_e);
                             if (result == ERROR)
                                 printf("There is no element [%d] in linear table [%s]!\n", e, p->name);
-                            else if (result == ERROR1)
+                            else if (result == INFEASTABLE)
                                 printf("The element [%d] is the first element in linear table [%s], which has no pioneer!\n", e, p->name);
                             else
                                 printf("The pioneer of element [%d] in linear table [%s] is [%d].\n", e, p->name, pre_e);
@@ -330,7 +327,7 @@ void main(void){
                             result = NextElem(*p->l, e, &next_e);
                             if (result == ERROR)
                                 printf("There is no element [%d] in linear table [%s]!\n", e, p->name);
-                            else if (result == ERROR1)
+                            else if (result == INFEASTABLE)
                                 printf("The element [%d] id the last element in linear table [%s], which has no successor!\n",
                                        e, p->name);
                             else
@@ -438,7 +435,69 @@ void main(void){
                 }
                 getchar();getchar();
                 break;
-            default: ;
+            case 13:
+                if (head_list_point->next != NULL) {
+                    printf("Please enter the name of linear table which you want to download:");
+                    char table_name[40];
+                    scanf("%s", table_name);
+                    L_list *p;
+                    for (p = head_list_point; p->next != NULL && strcmp(p->name, table_name) != 0; p = p->next);
+                    if (p->next == NULL) {
+                        printf("The name called [%s] doesn't exist in our system!\n", table_name);
+                    }
+                    else {
+                        if (!ListEmpty(*p->l)){
+                            ListDownload(p->l, p->name);
+                            printf("Linear table [%s] has been downloaded to \"./%s.txt\"\n", p->name, p->name);
+                        }
+                        else
+                            printf("There is no element in linear table [%s]!\n", p->name);
+                    }
+                }
+                else {
+                    printf("There is no linear table existing in our system!\n");
+                }
+                getchar();getchar();
+                break;
+            case 14: {
+                SqList *new_list = (SqList *) malloc(sizeof(SqList));  //创建新的线性表头指针节点
+                new_list->elem = NULL;
+                InitList(new_list);
+                char list_name[40], list_road[50];
+                printf("Please enter the road of the file which you want to upload:");
+                scanf("%s", list_road);
+                if (ListUpload(new_list, list_road, list_name) == OK) {
+                    L_list *p;  //判断线性表是否重名
+                    for (p = head_list_point; p->next != NULL && strcmp(p->name, list_name) != 0; p = p->next);
+                    if (p->next != NULL) {  //新线性表重名
+                        printf("The linear table [%s] has existed in our system, please destroy it first!\n", list_name);
+                        free(new_list);
+                    }
+                    else {
+                        for (new_p = head_list_point; new_p->next != NULL;) {  //找到列表头指针链表的尾节点
+                            new_p = new_p->next;
+                        }
+                        new_p->next = (struct L_list *) malloc(sizeof(L_list));
+                        new_p->next->next = NULL;
+                        new_p->l = new_list;  //把新创建的列表头指针赋给列表头指针链表的尾节点
+                        printf("The linear table [%s] has been upload from \"%s\"", list_name, list_road);
+                        strcpy(new_p->name, list_name);
+                    }
+                }
+                getchar();getchar();
+                break;
+            }
+            case 15:
+                if (head_list_point->next != NULL)
+                    display(head_list_point);
+                else{
+                    printf("There is no linear table existing in our system!\n");
+                }
+                getchar();getchar();
+                break;
+            default:
+                printf("Please enter a right option!\n");
+                getchar();getchar();
         }
     }while (option);
     printf("\n--------------------Welcome again!--------------------\n");
@@ -449,13 +508,14 @@ void menu(void){
     printf("\n");
     printf("      Menu for Linear Table On Sequence Structure \n");
     printf("------------------------------------------------------\n");
-    printf("    	  1. InitList        7. LocatElem\n");
-    printf("    	  2. DestroyList     8. PriorElem\n");
-    printf("    	  3. ClearList       9. NextElem \n");
-    printf("    	  4. ListEmpty      10. ListInsert\n");
-    printf("    	  5. ListLength     11. ListDelete\n");
-    printf("    	  6. GetElem        12. ListTraverse\n");
-    printf("    	  0. Exit\n");
+    printf("    	  1. InitList         8. PriorElem\n");
+    printf("    	  2. DestroyList      9. NextElem \n");
+    printf("    	  3. ClearList       10. ListInsert \n");
+    printf("    	  4. ListEmpty       11. ListDelete\n");
+    printf("    	  5. ListLength      12. ListTraverse\n");
+    printf("    	  6. GetElem         13. ListDownload\n");
+    printf("    	  7. LocatElem       14. ListUpload\n");
+    printf("    	  0. Exit            15. DisplayListName\n");
     printf("------------------------------------------------------\n");
 }
 
@@ -491,7 +551,7 @@ int ListLength(SqList L){
 
 status GetElem(SqList L, int i, ElemType * e){
     *e = *(L.elem+i-1);
-    return *e;
+    return OK;
 }
 
 status LocalElem(SqList L, ElemType e){
@@ -509,12 +569,12 @@ status PriorElem(SqList L, ElemType cur_e, ElemType * pre_e){
     int i = LocalElem(L, cur_e);
     if (i!=0 && i!=1){
         *pre_e = L.elem[i-2];
-        return *pre_e;  //返回cur_e的前驱
+        return OK;
     }
     else if (i==0)
         return ERROR;  //ERROR表示线性表L中无cur_e元素
     else
-        return ERROR1;  //ERROR1代表当前元素为线性表L的第一个元素，无法获得前驱
+        return INFEASTABLE;  //INFEASTABLE代表当前元素为线性表L的第一个元素，无法获得前驱
 
 }
 
@@ -522,12 +582,12 @@ status NextElem(SqList L, ElemType cur_e, ElemType * next_e){
     int i = LocalElem(L, cur_e);
     if (i!=0 && i!=L.length){
         *next_e = L.elem[i];
-        return *next_e;  //返回cur_e的后继
+        return OK;
     }
     else if (i==0)
         return ERROR;  //ERROR表示线性表L中无cur_e元素
     else
-        return ERROR1;  //ERROR1代表当前元素为线性表L的最后一个元素，无法获得后继
+        return INFEASTABLE;  //INFEASTABLE代表当前元素为线性表L的最后一个元素，无法获得后继
 }
 
 status ListInsert(SqList * L, int i, ElemType e){
@@ -568,6 +628,54 @@ status ListTraverse(SqList L, void (* visit)(ElemType e)){
     return OK;
 }
 
+status ListDownload(SqList * L, char *list_name){
+    FILE * fp;
+    int i;
+    char file_path[40] = "./";
+    strcat(file_path,list_name);  //连接文件路径
+    strcat(file_path, ".txt");
+    if ((fp=fopen(file_path, "w")) == NULL){
+        printf("File open error!\n");
+        return ERROR;
+    }
+    fprintf(fp, "%s:\n", list_name);
+    for (i = 0; i < L->length; ++i) {
+        fprintf(fp, "%d ", L->elem[i]);
+    }
+    fclose(fp);
+    return OK;
+}
+
+status ListUpload(SqList * L, char * list_road, char * list_name){
+    FILE * fp;
+    int file_data, count = 1, i = 0;
+    if ((fp = fopen(list_road, "r")) == NULL){
+        printf("File download error!\n");
+        return ERROR;
+    }
+    fgets(list_name, 1000, fp);
+    while ((list_name[i] != '\n') && (list_name[i] != ':')){
+        i++;
+    }
+    list_name[i] = '\0';
+    while (!feof(fp)){
+        fscanf(fp, "%d ", &file_data);
+        ListInsert(L, count, file_data);
+        count++;
+    }
+    fclose(fp);
+    return OK;
+}
+
 void visit(ElemType e){
     printf("%d ", e);
+}
+
+status display(L_list * head_point){
+    L_list *p;
+    printf("The linear tables exist in our system are as follow:\n");
+    for (p = head_point; p->next != NULL; p = p->next) {
+        printf("%s ", p->name);
+    }
+    return OK;
 }
